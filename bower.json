@@ -1,0 +1,23 @@
+{
+  "name": "schlepless",
+  "version": "0.4.2",
+  "homepage": "https://github.com/noahpryor/selectorgadget",
+  "authors": [
+    "Noah Pryor <noah@noahpryor.com>"
+  ],
+  "description": "foo",
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "app/bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jquery": "~2.1.0",
+    "underscore": "~1.6.0"
+  }
+}

@@ -250,9 +250,10 @@ window.SelectorGadget = class SelectorGadget
     false
 
   setupEventHandlers: ->
-    jQuerySG("*:not(.selectorgadget_ignore)").bind("mouseover.sg", { 'self': @ }, @sgMouseover)
-    jQuerySG("*:not(.selectorgadget_ignore)").bind("mouseout.sg", { 'self': @ }, @sgMouseout)
-    jQuerySG("*:not(.selectorgadget_ignore)").bind("mousedown.sg", { 'self': @ }, @sgMousedown)
+
+    jQuerySG("*:not(#selectorgadget_main *):not(#selectorgadget_main)").bind("mouseover.sg", { 'self': @ }, @sgMouseover)
+    jQuerySG("*:not(#selectorgadget_main *):not(#selectorgadget_main)").bind("mouseout.sg", { 'self': @ }, @sgMouseout)
+    jQuerySG("*:not(#selectorgadget_main *):not(#selectorgadget_main)").bind("mousedown.sg", { 'self': @ }, @sgMousedown)
     jQuerySG("html").bind("keydown.sg", { 'self': @ }, @listenForActionKeys)
     jQuerySG("html").bind("keyup.sg", { 'self': @ }, @clearActionKeys)
 
@@ -293,7 +294,8 @@ window.SelectorGadget = class SelectorGadget
       count = 0
       jQuerySG(prediction).each ->
         count += 1
-        jQuerySG(@).addClass('selectorgadget_suggested') if !jQuerySG(@).hasClass('selectorgadget_selected') && !jQuerySG(@).hasClass('selectorgadget_ignore') && !jQuerySG(@).hasClass('selectorgadget_rejected')
+        notInWidget = jQuerySG(@).parents("#selectorgadget_main") == []
+        jQuerySG(@).addClass('selectorgadget_suggested') if !jQuerySG(@).hasClass('selectorgadget_selected') && !jQuerySG(@).hasClass('selectorgadget_rejected')
 
       if @clear_button
         if count > 0
@@ -303,10 +305,11 @@ window.SelectorGadget = class SelectorGadget
 
   setPath: (prediction) ->
     if prediction && prediction.length > 0
+
       @path_output_field.value = prediction
       @current_selector = prediction
     else
-      @path_output_field.value = 'No valid path found.'
+      @path_output_field.value = "Nothing"
 
   refreshFromPath: (e) ->
     self = (e && e.data && e.data.self) || @
@@ -314,13 +317,6 @@ window.SelectorGadget = class SelectorGadget
     self.clearSelected()
     self.suggestPredicted(path)
     self.setPath(path)
-
-  showXPath: (e) ->
-    self = (e && e.data && e.data.self) || @
-    path = self.path_output_field.value
-    return if path == 'No valid path found.'
-    prompt "The CSS selector '#{path}' as an XPath is shown below.  Please report any bugs that you find with this converter.",
-           self.prediction_helper.cssToXPath(path)
 
   clearSelected: (e) ->
     self = (e && e.data && e.data.self) || @
@@ -342,14 +338,12 @@ window.SelectorGadget = class SelectorGadget
     jQuerySG('.selectorgadget_suggested').removeClass('selectorgadget_suggested')
     @clear_button.attr('value', 'Clear') if @clear_button
 
-  showHelp: ->
-    alert "Click on a page element that you would like your selector to match (it will turn green). SelectorGadget will then generate a minimal CSS selector for that element, and will highlight (yellow) everything that is matched by the selector. Now click on a highlighted element to reject it (red), or click on an unhighlighted element to add it (green). Through this process of selection and rejection, SelectorGadget helps you to come up with the perfect CSS selector for your needs.\n\nHolding 'shift' while moving the mouse will let you select elements inside of other selected elements."
-
   makeInterface: ->
-    @sg_div = jQuerySG('<div>').attr('id', 'selectorgadget_main').addClass('selectorgadget_bottom').addClass('selectorgadget_ignore')
+    @sg_div = jQuerySG('<div>').attr('id', 'selectorgadget_main').addClass('selectorgadget_top').addClass('selectorgadget_ignore')
+    jQuerySG('body').append(@sg_div)
     @makeStandardInterface()
 
-    jQuerySG('body').append(@sg_div)
+
   postData: ->
     firebase = new Firebase('https://foodtrucks.firebaseio.com/menus');
     firebase.push({
@@ -358,30 +352,15 @@ window.SelectorGadget = class SelectorGadget
 
   makeStandardInterface: ->
     self = @;
-    path = jQuerySG('<input>').attr('id', 'selectorgadget_path_field').addClass('selectorgadget_ignore').addClass('selectorgadget_input_field').keydown((e) ->
+    @sg_div.append(TMPL.bookmarklet)
+    path = jQuerySG('#selectorgadget_path_field').keydown((e) ->
       if e.keyCode == 13
         self.refreshFromPath(e)
     ).focus(-> jQuerySG(this).select())
-    @sg_div.append(path);
-    @clear_button = jQuerySG('<input type="button" value="Clear"/>').bind("click", {'self': @}, @clearEverything).addClass('selectorgadget_ignore').addClass('selectorgadget_input_field')
-    @save_button = jQuerySG('<input type="button" value="Save"/>').bind("click", {'self': @}, @postData).addClass('selectorgadget_ignore').addClass('selectorgadget_input_field')
-    @sg_div.append(this.save_button)
 
-
-    @sg_div.append(this.clear_button)
-    @sg_div.append(jQuerySG('<input type="button" value="Toggle Position"/>').click( ->
-      if self.sg_div.hasClass('selectorgadget_top')
-        self.sg_div.removeClass('selectorgadget_top').addClass('selectorgadget_bottom')
-      else
-        self.sg_div.removeClass('selectorgadget_bottom').addClass('selectorgadget_top')
-    ).addClass('selectorgadget_ignore').addClass('selectorgadget_input_field'))
-
-    @sg_div.append(jQuerySG('<input type="button" value="XPath"/>').bind("click", {'self': @}, @showXPath).addClass('selectorgadget_ignore').addClass('selectorgadget_input_field'))
-
-    @sg_div.append(jQuerySG('<input type="button" value="?"/>').bind("click", {'self': @}, @showHelp).addClass('selectorgadget_ignore').addClass('selectorgadget_input_field'))
-
-    @sg_div.append(jQuerySG('<input type="button" value="X"/>').bind("click", {'self': @}, @unbindAndRemoveInterface).addClass('selectorgadget_ignore').addClass('selectorgadget_input_field'))
-
+    @clear_button = jQuerySG("#clear_button").bind("click", {'self': @}, @clearEverything)
+    @save_button = jQuerySG("#save_button").bind("click", {'self': @}, @postData)
+    @close_button = jQuerySG("#close_button").bind("click", {'self': @}, @unbindAndRemoveInterface)
     @path_output_field = path.get(0)
 
   removeInterface: (e) ->
@@ -421,7 +400,6 @@ window.SelectorGadget = class SelectorGadget
       window.selector_gadget.makeInterface()
       window.selector_gadget.clearEverything()
       window.selector_gadget.setMode('interactive')
-      window.selector_gadget.analytics() unless options?.analytics == false
     else if window.selector_gadget.unbound
       window.selector_gadget.rebindAndMakeInterface()
     else
@@ -430,16 +408,3 @@ window.SelectorGadget = class SelectorGadget
     jQuerySG('.selector_gadget_loading').remove()
 
   analytics: ->
-    # http://www.vdgraaf.info/google-analytics-without-javascript.html
-    utmac = 'UA-148948-9'
-    utmhn = encodeURIComponent('www.selectorgadget.com')
-    utmn = this.randBetween(1000000000,9999999999) # random request number
-    cookie = this.randBetween(10000000,99999999) # random cookie number
-    random = this.randBetween(1000000000,2147483647) # number under 2147483647
-    today = Math.round(new Date().getTime()/1000.0)
-    referer = encodeURIComponent(window.location.href) # referer url
-    uservar='-' # enter your own user defined variable
-    utmp='sg';
-
-    urchinUrl = 'http://www.google-analytics.com/__utm.gif?utmwv=1&utmn=' + utmn + '&utmsr=-&utmsc=-&utmul=-&utmje=0&utmfl=-&utmdt=-&utmhn=' + utmhn + '&utmr=' + referer + '&utmp=' + utmp + '&utmac=' + utmac + '&utmcc=__utma%3D' + cookie + '.' + random + '.' + today + '.' + today + '.' + today + '.2%3B%2B__utmb%3D' + cookie + '%3B%2B__utmc%3D' + cookie + '%3B%2B__utmz%3D' + cookie + '.' + today + '.2.2.utmccn%3D(direct)%7Cutmcsr%3D(direct)%7Cutmcmd%3D(none)%3B%2B__utmv%3D' + cookie + '.' + uservar + '%3B';
-    document.body.appendChild(jQuerySG('<img />').attr('src', urchinUrl).get(0))

@@ -1,24 +1,27 @@
-var gulp = require('gulp'),
-  concat = require('gulp-concat'),
+var gulp        = require('gulp'),
+  concat        = require('gulp-concat'),
   templateCache = require('gulp-angular-templatecache'),
-  ngmin = require('gulp-ngmin'),
-  less = require('gulp-less'),
-  path = require('path'),
-  clean = require('gulp-clean'),
-  gutil = require('gulp-util'),
-  gulpif = require('gulp-if'),
-  uglify = require('gulp-uglify'),
-  imagemin = require('gulp-imagemin'),
-  linker = require('gulp-linker'),
-  build = require('gulp-build'),
-  bg = require('gulp-bg');
-proxy = require('proxy-middleware'),
-coffee = require('gulp-coffee'),
-sass = require('gulp-ruby-sass'),
-url = require('url'),
-express = require('express'),
-connectLiveReload = require('connect-livereload'),
-SprocketsChain = require("sprockets-chain");
+  ngmin         = require('gulp-ngmin'),
+  less          = require('gulp-less'),
+  path          = require('path'),
+  clean         = require('gulp-clean'),
+  gutil         = require('gulp-util'),
+  gulpif        = require('gulp-if'),
+  uglify        = require('gulp-uglify'),
+  imagemin      = require('gulp-imagemin'),
+  linker        = require('gulp-linker'),
+  build         = require('gulp-build'),
+  bg            = require('gulp-bg'),
+  bowerSrc      = require('gulp-bower-src'),
+  filter        = require('gulp-filter'),
+  jst           = require('gulp-jstemplater'),
+  proxy             = require('proxy-middleware'),
+  coffee            = require('gulp-coffee'),
+  sass              = require('gulp-ruby-sass'),
+  url               = require('url'),
+  express           = require('express'),
+  connectLiveReload = require('connect-livereload'),
+  SprocketsChain    = require("sprockets-chain");
 var scJS = new SprocketsChain();
 scJS.appendPath("./vendor");
 scJS.appendPath("./lib/js");
@@ -26,9 +29,7 @@ scJS.appendPath("./lib/js");
 var EXPRESS_PORT = 9000;
 var EXPRESS_ROOT = './build';
 var LIVERELOAD_PORT = 35729;
-var REDIRECT_PATTERN = '/api/v1'
-var REDIRECT_DESTINATION = 'http://localhost:4000/api/v1'
-var modRewrite = require('connect-modrewrite');
+var filter = filter('**/*.js', '!**/*.min.js');
 
 err = null;
 // Let's make things more readable by
@@ -76,7 +77,8 @@ paths = {
         "./lib/js/core/core.js.coffee"
       ],
     bookmarklet:"./lib/js/bookmarklet.js",
-    htmlIndex:"./lib/index.html",
+    html:"./lib/*.html",
+    templates:"./lib/html/*.html",
     css: "./lib/css/**.css"
 
   },
@@ -88,12 +90,12 @@ paths = {
 replace_options = { BASE_URL: 'http://localhost:9000' }
 gulp.task('coffee',function() {
   return gulp.src(paths.input.coffee)
-  .pipe(coffee()).pipe(concat("coffee.js"))
-  .pipe(gulp.dest("./build"))
+  .pipe(coffee()).pipe(concat("schlepless.js"))
+  .pipe(gulp.dest("./tmp"))
 });
 
 gulp.task('copy-index',function() {
-    return gulp.src(paths.input.htmlIndex)
+    return gulp.src(paths.input.html)
     .pipe(build(replace_options))
     .pipe(gulp.dest("./build/"))
 });
@@ -104,16 +106,31 @@ gulp.task('css', function () {
         .pipe(gulp.dest('build'));
 });
 
+gulp.task('jst', function() {
+    gulp.src('lib/html/*.html')
+        .pipe(jst( "html.js", {variable: "TMPL"} ) )
+        .pipe(gulp.dest('./tmp'));
+});
+gulp.task("bower", function(){
+    bowerSrc()
+      .pipe(filter).pipe(concat('bower.js'))
+      .pipe(gulp.dest('./tmp/'));
+});
+
 gulp.task('copy-bookmarklet',function() {
     return gulp.src(paths.input.bookmarklet)
     .pipe(build(replace_options))
     .pipe(gulp.dest("./build"))
 });
 
-gulp.task('scripts',["coffee"],function() {
-  var scriptPaths = paths.input.js
-  scriptPaths.push("./build/coffee.js")
-    return gulp.src(scriptPaths)
+gulp.task('vendor',function() {
+    return gulp.src(paths.input.js)
+    .pipe(concat("assets.js"))
+    .pipe(gulp.dest("./tmp"))
+});
+
+gulp.task('scripts',["coffee","vendor","jst"],function() {
+    return gulp.src("./tmp/**.js")
     .pipe(concat("schlepless.js"))
     .pipe(gulp.dest("./build"))
 });
@@ -121,14 +138,17 @@ gulp.task('scripts',["coffee"],function() {
 gulp.task('watch', function() {
   gulp.watch([
     'build/**/*.html',
+    'build/*.html',
     'build/**/*.js',
     'build/**/*.css'
   ], notifyLivereload);
+  gulp.watch(paths.input.templates, ['jst']);
   gulp.watch(paths.input.htmlIndex, ['copy-html']);
   gulp.watch(paths.input.bookmarklet, ['copy-bookmarklet']);
-  gulp.watch(paths.input.js, ['scripts']);
+  gulp.watch(paths.input.js, ['vendor']);
+  gulp.watch("./tmp/*.js", ['scripts']);
   gulp.watch(paths.input.css, ['css']);
-  gulp.watch(paths.input.coffee, ['scripts']);
+  gulp.watch(paths.input.coffee, ['coffee']);
 });
 
 gulp.task('connect', function(cb) {

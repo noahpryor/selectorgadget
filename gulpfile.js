@@ -12,7 +12,7 @@ var gulp        = require('gulp'),
   linker        = require('gulp-linker'),
   build         = require('gulp-build'),
   bg            = require('gulp-bg'),
-  bowerSrc      = require('gulp-bower-src'),
+  bowerSrc      = require('gulp-bower-files'),
   filter        = require('gulp-filter'),
   jst           = require('gulp-jstemplater'),
   proxy             = require('proxy-middleware'),
@@ -22,9 +22,6 @@ var gulp        = require('gulp'),
   express           = require('express'),
   connectLiveReload = require('connect-livereload'),
   SprocketsChain    = require("sprockets-chain");
-var scJS = new SprocketsChain();
-scJS.appendPath("./vendor");
-scJS.appendPath("./lib/js");
 
 var EXPRESS_PORT = 9000;
 var EXPRESS_ROOT = './build';
@@ -71,10 +68,11 @@ function notifyLivereload(event) {
 
 paths = {
   input: {
-    js: scJS.depChain("vendor.js"),
     coffee: ["./lib/js/core/dom.js.coffee",
       "./lib/js/core/jqueryContentMatcher.js.coffee",
-        "./lib/js/core/core.js.coffee"
+        "./lib/js/core/core.js.coffee",
+      "./lib/js/core/init.coffee"
+
       ],
     bookmarklet:"./lib/js/bookmarklet.js",
     html:"./lib/*.html",
@@ -90,11 +88,12 @@ paths = {
 replace_options = { BASE_URL: 'http://localhost:9000' }
 gulp.task('coffee',function() {
   return gulp.src(paths.input.coffee)
-  .pipe(coffee()).pipe(concat("schlepless.js"))
+  .pipe(coffee())
+  .pipe(concat("sl.js"))
   .pipe(gulp.dest("./tmp"))
 });
 
-gulp.task('copy-index',function() {
+gulp.task('copy-html',function() {
     return gulp.src(paths.input.html)
     .pipe(build(replace_options))
     .pipe(gulp.dest("./build/"))
@@ -107,13 +106,13 @@ gulp.task('css', function () {
 });
 
 gulp.task('jst', function() {
-    gulp.src('lib/html/*.html')
+  return gulp.src('lib/html/*.html')
         .pipe(jst( "html.js", {variable: "TMPL"} ) )
         .pipe(gulp.dest('./tmp'));
 });
 gulp.task("bower", function(){
-    bowerSrc()
-      .pipe(filter).pipe(concat('bower.js'))
+    return bowerSrc()
+      .pipe(concat("bower.js"))
       .pipe(gulp.dest('./tmp/'));
 });
 
@@ -123,14 +122,10 @@ gulp.task('copy-bookmarklet',function() {
     .pipe(gulp.dest("./build"))
 });
 
-gulp.task('vendor',function() {
-    return gulp.src(paths.input.js)
-    .pipe(concat("assets.js"))
-    .pipe(gulp.dest("./tmp"))
-});
 
-gulp.task('scripts',["coffee","vendor","jst"],function() {
-    return gulp.src("./tmp/**.js")
+gulp.task('scripts',["coffee","bower","jst"],function() {
+    return gulp.src("./tmp/*.js")
+    .pipe(clean())
     .pipe(concat("schlepless.js"))
     .pipe(gulp.dest("./build"))
 });
@@ -142,13 +137,13 @@ gulp.task('watch', function() {
     'build/**/*.js',
     'build/**/*.css'
   ], notifyLivereload);
-  gulp.watch(paths.input.templates, ['jst']);
-  gulp.watch(paths.input.htmlIndex, ['copy-html']);
+  gulp.watch(paths.input.templates, ['scripts']);
+  gulp.watch(paths.input.html, ['copy-html']);
   gulp.watch(paths.input.bookmarklet, ['copy-bookmarklet']);
-  gulp.watch(paths.input.js, ['vendor']);
+  gulp.watch('bower.json', ['scripts']);
   gulp.watch("./tmp/*.js", ['scripts']);
   gulp.watch(paths.input.css, ['css']);
-  gulp.watch(paths.input.coffee, ['coffee']);
+  gulp.watch(paths.input.coffee, ['scripts']);
 });
 
 gulp.task('connect', function(cb) {
@@ -157,7 +152,7 @@ gulp.task('connect', function(cb) {
   cb(err); // if err is not null and not undefined, the orchestration will stop, and 'two' will not run
 });
 
-gulp.task('default',["scripts","css","copy-index","copy-bookmarklet","connect","watch"], function() {
+gulp.task('default',["scripts","css","copy-html","copy-bookmarklet","connect","watch"], function() {
 
   // place code for your default task here
 });

@@ -1,3 +1,4 @@
+window.jQuerySG = jQuery.noConflict(true);
 window.DomPredictionHelper = class DomPredictionHelper
   recursiveNodes: (e) ->
     if e.nodeName && e.parentNode && e != document.body

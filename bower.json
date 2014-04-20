@@ -18,6 +18,16 @@
   ],
   "dependencies": {
     "jquery": "~2.1.0",
-    "underscore": "~1.6.0"
+    "underscore": "~1.6.0",
+    "google-diff-match-patch-js": "~1.0.0",
+    "angular": "~1.2.16"
+  },
+  "overrides": {
+    "jquery": {
+      "main": "dist/jquery.js"
+    },
+    "google-diff-match-patch-js": {
+      "main": "diff_match_patch_uncompressed.js"
+    }
   }
 }

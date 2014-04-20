@@ -24,6 +24,7 @@
 ###
 
 window.SelectorGadget = class SelectorGadget
+  firebase_url: "https://foodtrucks.firebaseio.com"
   save_url: "http://foodtrucks.firebase.com/menus.json"
   current_url: document.URL
   current_selector: null
@@ -40,6 +41,7 @@ window.SelectorGadget = class SelectorGadget
   sg_div: null
   ignore_class: 'selectorgadget_ignore'
   unbound: false
+  auth: null
   prediction_helper: new DomPredictionHelper()
   restricted_elements: jQuerySG.map(['html', 'body', 'head', 'base'], (selector) -> jQuerySG(selector).get(0))
 
@@ -339,20 +341,43 @@ window.SelectorGadget = class SelectorGadget
     @clear_button.attr('value', 'Clear') if @clear_button
 
   makeInterface: ->
-    @sg_div = jQuerySG('<div>').attr('id', 'selectorgadget_main').addClass('selectorgadget_top').addClass('selectorgadget_ignore')
-    jQuerySG('body').append(@sg_div)
+    #@sg_div = jQuerySG('<div>').attr('id', 'selectorgadget_main').addClass('selectorgadget_top').addClass('selectorgadget_ignore')
+    #jQuerySG('body').append(@sg_div)
     @makeStandardInterface()
 
+  login: ->
+    auth.login('password', {
+      email: '<email@domain.com>',
+      password: '<password>'
+    });
+
+  setupAuth: ->
+    ref = new Firebase(@firebase_url)
+    @auth = new FirebaseSimpleLogin(ref, (error, user) ->
+      if errorf
+
+        # an error occurred while attempting login
+        console.log error
+      else if user
+
+        # user authenticated with Firebase
+        console.log "User ID: " + user.uid + ", Provider: " + user.provider
+      else
+
+      return
+    )
+
+    # user is logged out
 
   postData: ->
-    firebase = new Firebase('https://foodtrucks.firebaseio.com/menus');
+    firebase = new Firebase(@firebase_url).child('menus');
     firebase.push({
       url: selector_gadget.current_url,
       selector:selector_gadget.current_selector})
 
   makeStandardInterface: ->
     self = @;
-    @sg_div.append(TMPL.bookmarklet)
+    #@sg_div.append(TMPL.bookmarklet)
     path = jQuerySG('#selectorgadget_path_field').keydown((e) ->
       if e.keyCode == 13
         self.refreshFromPath(e)

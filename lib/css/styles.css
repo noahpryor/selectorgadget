@@ -49,23 +49,26 @@ div#selectorgadget_main {
   vertical-align: baseline !important;
   visibility: visible !important;
   white-space: normal !important;
-  width: 90% !important;
+  width: 100% !important;
   word-spacing: normal !important;
   position: fixed !important;
   z-index: 9999999 !important;
   display: block !important;
   right: 0px !important;
-  left: 5% !important;
-  margin-bottom: 5px !important;
   padding: 5px !important;
   padding-top: 5px !important;
   font-size: 14px !important;
   float: none !important;
-  border: 1px solid black !important;
+  border: 0 px solid black !important;
   font-style: none !important;
   background: white !important;
   text-align: left !important; }
 
+#sl-widget {
+  margin-left: auto !important;
+  margin-right: auto !important;
+  width: 900px !important;
+}
 div#selectorgadget_main *, .selectorgadget_clean, .selectorgadget_clean * {
   azimuth: center;
   background-attachment: scroll;
@@ -146,6 +149,11 @@ div#selectorgadget_main .selectorgadget_input_field {
   cursor: pointer;
   padding: 5px 8px 6px 7px; }
 
+body {
+  background-position-y: 199px;
+  padding-top: 44px !important;
+}
+}
 div#selectorgadget_main .selectorgadget_wizard .selectorgadget_input_field {
   margin: 7px 3px 7px 3px;
   float: none;
@@ -205,10 +213,11 @@ img.selectorgadget_selected {
   border: 5px solid #0F0 !important; }
 
 #selectorgadget_main.selectorgadget_top {
-  bottom: 0px !important; }
+  top: 0px !important; }
 
 #selectorgadget_main.selectorgadget_bottom {
-  bottom: 5px !important; }
+  bottom: 5px !important;
+}
 
 #selectorgadget_main input {
   margin-right: 10px !important;
